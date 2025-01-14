@@ -56,37 +56,30 @@ def get_design_system(Ap, Bp, Cp, Dp, Q, R):
     ])
     E = np.block([
         [np.zeros(shape=(n, k))],
-        [np.eye(n=k)]
+        [np.eye(k)]
     ])
 
-    shapes = {
-        A: (n + k, n + k),
-        B: (n + k, m),
-        C: (n + k, k + m),
-        D: (k + m, m),
-        E: (n + k, k),
-    }
-
-    for matrix, shape in shapes.items():
-        assert matrix.shape == shape, f"has shape {matrix.shape}, should have shape {shape}"
+    assert A.shape == (n + k, n + k)
+    assert B.shape == (n + k, m)
+    assert C.shape == (k + m, k + n)
+    assert D.shape == (k + m, m)
+    assert E.shape == (n + k, k)
 
     return A, B, C, D, E
 
 
 def design_system_lqr(A, B, Q, R):
-    """Compute lqr feedback for system returned by
-    get_design_system.
+    """Compute lqr feedback for system returned by get_design_system.
     """
-    n = A.shape[0]  # no. states
-    m = B.shape[1]  # no. inputs
     k = Q.shape[0]  # no. errors
+    n = A.shape[0] - k  # no. states
 
     Qd = np.block([
         [np.zeros(shape=(n, n)), np.zeros(shape=(n, k))],
         [np.zeros(shape=(k, n)), Q]
     ])
-    assert Qd.shape[0] == n+k
-    assert Qd.shape[1] == n+k
+    assert Qd.shape[0] == A.shape[0]
+    assert Qd.shape[1] == A.shape[0]
 
     K, S, E = ct.dlqr(A, B, Qd, R)  # K is (1, n+k)
     assert K.shape == (1, n+k)
@@ -138,18 +131,13 @@ def get_preview_system(A, B, C, D, E, h):
         [np.zeros(shape=(k, r))]
     ])
 
-    shapes = {
-        F: (n + r, n + r),
-        G: (n + r, m),
-        L: (n + r, k),
-        H: (k, n + r),
-        D: (k, m),
-        Ad: (r, r),
-        Bd: (r, k),
-    }
-
-    for matrix, shape in shapes.items():
-        assert matrix.shape == shape, f"has shape {matrix.shape}, should have shape {shape}"
+    assert Ad.shape == (r, r)
+    assert Bd.shape == (r, k)
+    assert F.shape == (n + r, n + r)
+    assert G.shape == (n + r, m)
+    assert L.shape == (n + r, k)
+    assert H.shape == (k, n + r)
+    assert D.shape == (k, m)
 
     return F, G, L, H, D
 
@@ -176,13 +164,17 @@ def preview_system_h_infinity(F, G, L, H, D, zeta_dim, ref_dim, u_dim):
 
 class LQRController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
-        self.e_accum = 0
+        C = ct.ctrb(Ap, Bp)
+        if C.shape[0] != np.linalg.matrix_rank(C):
+            raise ValueError("system not controllable")
+
+        self.e_accum = np.zeros(shape=(Q.shape[0], 1))
 
         A, B, C, D, E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
         self.K_state, self.K_error = design_system_lqr(A, B, Q, R)
         
     def control(self, x):
-        return self.K_state @ x + self.K_error @ self.e_accum
+        return -self.K_state @ x + -self.K_error @ self.e_accum
 
     def update(self, error):
         self.e_accum += error
