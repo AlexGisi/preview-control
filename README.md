@@ -3,13 +3,15 @@ Preview control augments state feedback techniques to use future points from the
 
 ![controller results](img/result.png)
 
+We see that adding preview improves the rise time and settling time.
+
 ## Use
 
 The control design provides a type-1 controller with good transient response for the system
 
 ![ss](img/ss.png)
 
-with respect to the objective
+in the sense of minimizing
 
 ![cost](img/cost.png)
 
