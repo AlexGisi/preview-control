@@ -1,6 +1,8 @@
 # preview-control
 Preview control augments state feedback techniques to use future points from the reference trajectory. Specifically, instead of the state feedback u = -kx, we use the feedback law u = -k [x; ref], where ref is a fixed-length preview of the reference. This repo implements the requisite state augmentation and lets you directly design a preview LQI controller.
 
+![controller results](img/result.png)
+
 ## Use
 
 The control design provides a type-1 controller with good transient response for the system
