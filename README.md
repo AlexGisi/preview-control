@@ -3,7 +3,7 @@ Preview control augments state feedback techniques to use future points from the
 
 ![controller results](img/result.png)
 
-We see that adding preview improves the rise time and settling time.
+For a randomly generated 4-order system, the image shows the simulation with different preview lengths i corresponding to y_i, u_i. We see that adding preview improves the rise time and settling time.
 
 ## Use
 

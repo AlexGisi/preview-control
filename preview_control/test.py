@@ -32,7 +32,7 @@ Q = np.array([[20.0]])
 R = np.array([[1.0]])
 
 
-def simulate(controller, times):
+def simulate(controller, times, get_ref):
     n_preview = controller.h if hasattr(controller, 'h') else None 
 
     x = np.zeros(shape=(Ap.shape[0], 1))
