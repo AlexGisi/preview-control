@@ -53,7 +53,7 @@ controller = preview_control.controller.LQRController(Ap, Bp, Cp, Dp, Q, R), ts
 p_controller = preview_control.controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5)
 
 # Simulate the result
-xs, ys, us = test.simulate(p_controller, ts)
+xs, ys, us = test.simulate(p_controller, ts, get_ref)
 ```
 
 ## Install
