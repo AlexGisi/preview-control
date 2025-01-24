@@ -1,7 +1,7 @@
 """
 Based off example 4 in "A Tutorial on Preview Control Systems", Takaba (2003).
 """
-import controller
+from . import controller
 import numpy as np
 import matplotlib.pyplot as plt
 
