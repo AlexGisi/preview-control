@@ -7,6 +7,7 @@ import scipy
 import numpy as np
 import control as ct
 import scipy.linalg
+from . import util
 
 
 def get_design_system(Ap, Bp, Cp, Dp, Q, R):
@@ -205,22 +206,77 @@ def preview_system_h_infinity(F, G, L, H, D):
     return K_state, K_e, K_r
 
 
+class Observer:
+    def __init__(self, Ap, Bp, Cp, Dp, K):
+        self.Ap = Ap
+        self.Bp = Bp
+        self.Cp = Cp
+        self.Dp = Dp
+        self._xhat = np.zeros(shape=(Ap.shape[0], 1))
+
+        
+        plant_poles = np.linalg.eig(Ap-Bp@K).eigenvalues 
+        desired_poles = util.choose_observer_poles(plant_poles, factor=0.5)
+
+        self._L = ct.place(Ap.T, Cp.T, desired_poles).T
+
+        assert self._L.shape == self._xhat.shape
+
+    def update(self, yk, uk):
+        yhat = self.Cp @ self._xhat + self.Dp @ uk
+        self._xhat = self.Ap @ self._xhat + self._L @ (yk - yhat) + self.Bp @ uk
+
+    def xhat(self):
+        return self._xhat
+
+
+class SimpleController:
+    def __init__(self, Ap, Bp, Cp, Dp):
+        ctrb = ct.ctrb(Ap, Bp)
+        if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
+            raise ValueError("system not controllable")
+        
+        Q = np.diag([1.0, 1.0, 1.0, 1.0])
+        R = np.array([[1]])
+
+        self.K_state, S, E = ct.dlqr(Ap, Bp, Q, R)
+        
+    def control(self, x):
+        return -self.K_state @ x
+
+    def update(self, error):
+        pass
+
+    def K(self):
+        return self.K_state
+    
+    def reset(self):
+        pass
+
+
 class LQRController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
-        C = ct.ctrb(Ap, Bp)
-        if C.shape[0] != np.linalg.matrix_rank(C):
+        ctrb = ct.ctrb(Ap, Bp)
+        if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
             raise ValueError("system not controllable")
 
         self.e_accum = np.zeros(shape=(Q.shape[0], 1))
 
-        A, B, C, D, E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
-        self.K_state, self.K_error = design_system_lqr(A, B, Q, R)
+        self._A, self._B, self._C, self._D, self._E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
+        self.K_state, self.K_error = design_system_lqr(self._A, self._B, Q, R)
         
     def control(self, x):
         return -self.K_state @ x + -self.K_error @ self.e_accum
 
     def update(self, error):
         self.e_accum += error
+
+    def K(self):
+        # return self.K_state
+        return np.concatenate([self.K_state, self.K_error], axis=1)
+    
+    def reset(self):
+        self.e_accum = np.zeros_like(self.e_accum)
 
 
 class LQRPreviewController:
@@ -241,6 +297,12 @@ class LQRPreviewController:
 
     def update(self, error):
         self.e_accum += error
+
+    def K(self):
+        return self.K_x
+    
+    def reset(self):
+        self.e_accum = np.zeros_like(self.e_accum)
 
 
 class PreviewController:
