@@ -23,20 +23,16 @@ Cp = np.array([[0.0, 1.0, 0.0, 0.0]])
 Dp = np.array([[0.0]])
 
 # Use a step reference
-ts = range(80)
+ts = range(100)
 rs = [np.zeros(shape=(Cp.shape[0], 1)) if t < 25 else np.ones(shape=(Cp.shape[0], 1)) for t in ts]
 get_ref = lambda i, h: np.array([rs[j] if j<len(rs) else rs[-1] for j in range(i, i+h+1)]).reshape(-1, 1)
-
-# Define control objective function
-Q = np.array([[20.0]])
-R = np.array([[1.0]])
 
 
 def simulate(controller, times, get_ref):
     n_preview = controller.h if hasattr(controller, 'h') else None 
 
-    # x = np.zeros(shape=(Ap.shape[0], 1))
-    x = np.ones(shape=(Ap.shape[0], 1))
+    x = np.zeros(shape=(Ap.shape[0], 1))
+    # x = np.ones(shape=(Ap.shape[0], 1))
     xs = [x]
     ys = [Cp @ x]
     us = []
@@ -60,7 +56,8 @@ def simulate(controller, times, get_ref):
 def simulate_observer(controller, times, get_ref, observer):
     n_preview = controller.h if hasattr(controller, 'h') else None 
 
-    x = np.ones(shape=(Ap.shape[0], 1))
+    x = np.zeros(shape=(Ap.shape[0], 1))
+    # x = np.ones(shape=(Ap.shape[0], 1))
     xs = [x]
     xos = [observer.xhat()]
     ys = [Cp @ x]
@@ -72,7 +69,7 @@ def simulate_observer(controller, times, get_ref, observer):
         # Apply control
         u = controller.control(xhat, rs=get_ref(t, n_preview)) if n_preview else controller.control(xhat)
         x = Ap @ x + Bp @ u
-        y = Cp @ x + Dp @ u
+        y = (Cp @ x + Dp @ u)
 
         # Update observer
         observer.update(y, u)
@@ -80,6 +77,10 @@ def simulate_observer(controller, times, get_ref, observer):
         # Bookkeeping
         e = rs[t] - y
         controller.update(e)
+
+        # if np.linalg.norm(x - xhat) > 0.01:
+        #     breakpoint()
+
         xs.append(x)
         xos.append(observer.xhat())
         ys.append(y)
@@ -91,11 +92,18 @@ def simulate_observer(controller, times, get_ref, observer):
 
     return xs, xos, ys, us
 
+# Define control objective function
+Q = np.array([[20.0]])
+R = np.array([[0.1]])
+
+# Q = np.diag([1.0, 1.0, 1.0, 1.0])
+# R = np.array([[1.0]])
+
 # ctrl = controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=1)
 ctrl = controller.LQRController(Ap, Bp, Cp, Dp, Q, R)
-# ctrl = controller.SimpleController(Ap, Bp, Cp, Dp)
-obsrv = controller.Observer(ctrl._A, ctrl._B, ctrl._C, ctrl._D, ctrl.K())
+# ctrl = controller.SimpleController(Ap, Bp, Cp, Dp, Q, R)
 # obsrv = controller.Observer(Ap, Bp, Cp, Dp, ctrl.K())
+obsrv = controller.Kalman(Ap, Bp, Cp, Dp, np.ones(shape=(4, 1)))
 
 xs, xos, ys, us = simulate_observer(ctrl, ts, get_ref, obsrv)
 ctrl.reset()

@@ -223,35 +223,61 @@ class Observer:
         assert self._L.shape == self._xhat.shape
 
     def update(self, yk, uk):
-        yhat = self.Cp @ self._xhat + self.Dp @ uk
-        self._xhat = self.Ap @ self._xhat + self._L @ (yk - yhat) + self.Bp @ uk
+        self._xhat = self.Ap @ self._xhat + self.Bp @ uk + self._L @ (yk - self.Cp @ self._xhat - self.Dp @ uk)
+
+    def xhat(self):
+        return self._xhat
+
+
+class Kalman:
+    def __init__(self, Ap, Bp, Cp, Dp, Ep):
+        self.Ap = Ap
+        self.Bp = Bp
+        self.Cp = Cp
+        self.Dp = Dp
+        self.Ep = Ep
+        self._xhat = np.zeros(shape=(Ap.shape[0], 1))
+
+        Qn = np.diag([0.00000001])
+        Rn = np.diag([0.0001])
+
+        self._L, _, _ = ct.dlqe(Ap, Ep, Cp, Qn, Rn)
+
+        assert self._L.shape == self._xhat.shape
+
+    def update(self, yk, uk):
+        self._xhat = self.Ap @ self._xhat + self.Bp @ uk + self._L @ (yk - self.Cp @ self._xhat - self.Dp @ uk)
 
     def xhat(self):
         return self._xhat
 
 
 class SimpleController:
-    def __init__(self, Ap, Bp, Cp, Dp):
+    def __init__(self, Ap, Bp, Cp, Dp, Q, R):
         ctrb = ct.ctrb(Ap, Bp)
         if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
             raise ValueError("system not controllable")
         
-        Q = np.diag([1.0, 1.0, 1.0, 1.0])
-        R = np.array([[1]])
+        self._A = Ap
+        self._B = Bp
+        self._C = Cp
+        self._D = Dp
+
+        self._error = 0
 
         self.K_state, S, E = ct.dlqr(Ap, Bp, Q, R)
         
     def control(self, x):
-        return -self.K_state @ x
+        return -self.K_state @ x - 0.1 * self._error
 
     def update(self, error):
-        pass
+        self._error += error
 
     def K(self):
         return self.K_state
     
     def reset(self):
-        pass
+        self._error = 0
 
 
 class LQRController:
@@ -264,7 +290,7 @@ class LQRController:
 
         self._A, self._B, self._C, self._D, self._E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
         self.K_state, self.K_error = design_system_lqr(self._A, self._B, Q, R)
-        
+
     def control(self, x):
         return -self.K_state @ x + -self.K_error @ self.e_accum
 
@@ -272,8 +298,7 @@ class LQRController:
         self.e_accum += error
 
     def K(self):
-        # return self.K_state
-        return np.concatenate([self.K_state, self.K_error], axis=1)
+        return self.K_state
     
     def reset(self):
         self.e_accum = np.zeros_like(self.e_accum)
