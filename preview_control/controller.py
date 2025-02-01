@@ -205,6 +205,27 @@ def preview_system_h_infinity(F, G, L, H, D):
     return K_state, K_e, K_r
 
 
+class SimpleController:
+    def __init__(self, Ap, Bp, Q, R):
+        ctrb = ct.ctrb(Ap, Bp)
+        if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
+            raise ValueError("system not controllable")
+
+        self.K_state, S, E = ct.dlqr(Ap, Bp, Q, R)
+        
+    def control(self, x):
+        return -self.K_state @ x
+
+    def update(self, error):
+        pass
+
+    def K(self):
+        return self.K_state
+    
+    def reset(self):
+        pass
+
+
 class LQRController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
         C = ct.ctrb(Ap, Bp)
