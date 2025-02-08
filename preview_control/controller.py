@@ -7,6 +7,7 @@ import scipy
 import numpy as np
 import control as ct
 import scipy.linalg
+from . import util
 
 
 def get_design_system(Ap, Bp, Cp, Dp, Q, R):
@@ -226,22 +227,61 @@ class SimpleController:
         pass
 
 
+class Kalman:
+    def __init__(self, Ap, Bp, Cp, Dp, Ep, Qn, Rn):
+        """Kalman filter wrapper for discrete time system
+        x_{t+1} = Ap @ x_t + Bp @ u + Ep @ w_t, y_t = Cp @ x_t + Dp @ u_t + v_t,
+        where w_t is noise with covariance matrix Qn and v_t is noise with covariance
+        matrix Rn.
+
+        :param Ap: _description_
+        :param Bp: _description_
+        :param Cp: _description_
+        :param Dp: _description_
+        :param Ep: _description_
+        :param Qn: _description_
+        :param Rn: _description_
+        """
+        self.Ap = Ap
+        self.Bp = Bp
+        self.Cp = Cp
+        self.Dp = Dp
+        self.Ep = Ep
+        self._xhat = np.zeros(shape=(Ap.shape[0], 1))
+
+        self._L, _, _ = ct.dlqe(Ap, Ep, Cp, Qn, Rn)
+
+        assert self._L.shape == self._xhat.shape
+
+    def update(self, yk, uk):
+        self._xhat = self.Ap @ self._xhat + self.Bp @ uk + self._L @ (yk - self.Cp @ self._xhat - self.Dp @ uk)
+
+    def xhat(self):
+        return self._xhat
+
+
 class LQRController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
-        C = ct.ctrb(Ap, Bp)
-        if C.shape[0] != np.linalg.matrix_rank(C):
+        ctrb = ct.ctrb(Ap, Bp)
+        if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
             raise ValueError("system not controllable")
 
         self.e_accum = np.zeros(shape=(Q.shape[0], 1))
 
-        A, B, C, D, E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
-        self.K_state, self.K_error = design_system_lqr(A, B, Q, R)
-        
+        self._A, self._B, self._C, self._D, self._E = get_design_system(Ap, Bp, Cp, Dp, Q, R)
+        self.K_state, self.K_error = design_system_lqr(self._A, self._B, Q, R)
+
     def control(self, x):
         return -self.K_state @ x + -self.K_error @ self.e_accum
 
     def update(self, error):
         self.e_accum += error
+
+    def K(self):
+        return self.K_state
+    
+    def reset(self):
+        self.e_accum = np.zeros_like(self.e_accum)
 
 
 class LQRPreviewController:
@@ -263,9 +303,17 @@ class LQRPreviewController:
     def update(self, error):
         self.e_accum += error
 
+    def K(self):
+        return self.K_x
+    
+    def reset(self):
+        self.e_accum = np.zeros_like(self.e_accum)
+
 
 class PreviewController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R, h):
+        raise NotImplementedError("must implement hinfsys in python-control")
+
         C = ct.ctrb(Ap, Bp)
         if C.shape[0] != np.linalg.matrix_rank(C):
             raise ValueError("system not controllable")
