@@ -260,7 +260,7 @@ class Kalman:
         return self._xhat
 
 
-class LQRController:
+class LQIController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
         ctrb = ct.ctrb(Ap, Bp)
         if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
@@ -284,7 +284,7 @@ class LQRController:
         self.e_accum = np.zeros_like(self.e_accum)
 
 
-class LQRPreviewController:
+class LQIPreviewController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R, h):
         self.h = h
         C = ct.ctrb(Ap, Bp)

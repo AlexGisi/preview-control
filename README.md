@@ -53,10 +53,10 @@ Q = np.array([[20.0]])
 R = np.array([[1.0]])
 
 # Design a controller with no preview
-controller = preview_control.controller.LQRController(Ap, Bp, Cp, Dp, Q, R), ts
+controller = preview_control.controller.LQIController(Ap, Bp, Cp, Dp, Q, R), ts
 
 # Design a controller with 5 preview steps
-p_controller = preview_control.controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5)
+p_controller = preview_control.controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5)
 
 # Simulate the result
 xs, ys, us = test.simulate(p_controller, ts, get_ref)

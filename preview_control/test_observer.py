@@ -92,7 +92,7 @@ Q = np.array([[10.0]])
 R = np.array([[0.1]])
 
 
-ctrl = controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10)
+ctrl = controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10)
 # ctrl = controller.LQRController(Ap, Bp, Cp, Dp, Q, R)
 
 Qn = np.diag([0.00000001])

@@ -56,11 +56,11 @@ def simulate(controller, times, get_ref):
     return xs, ys, us
 
 trials = {
-    0: simulate(controller.LQRController(Ap, Bp, Cp, Dp, Q, R), ts),
-    5: simulate(controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5), ts),
-    10: simulate(controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10), ts),
-    15: simulate(controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=15), ts),
-    20: simulate(controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=20), ts),
+    0: simulate(controller.LQIController(Ap, Bp, Cp, Dp, Q, R), ts),
+    5: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5), ts),
+    10: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10), ts),
+    15: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=15), ts),
+    20: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=20), ts),
 }
 
 rs = [float(r.item()) for r in rs]
