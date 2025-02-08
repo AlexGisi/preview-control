@@ -206,40 +206,27 @@ def preview_system_h_infinity(F, G, L, H, D):
     return K_state, K_e, K_r
 
 
-class Observer:
-    def __init__(self, Ap, Bp, Cp, Dp, K):
-        self.Ap = Ap
-        self.Bp = Bp
-        self.Cp = Cp
-        self.Dp = Dp
-        self._xhat = np.zeros(shape=(Ap.shape[0], 1))
-
-        
-        plant_poles = np.linalg.eig(Ap-Bp@K).eigenvalues 
-        desired_poles = util.choose_observer_poles(plant_poles, factor=0.5)
-
-        self._L = ct.place(Ap.T, Cp.T, desired_poles).T
-
-        assert self._L.shape == self._xhat.shape
-
-    def update(self, yk, uk):
-        self._xhat = self.Ap @ self._xhat + self.Bp @ uk + self._L @ (yk - self.Cp @ self._xhat - self.Dp @ uk)
-
-    def xhat(self):
-        return self._xhat
-
-
 class Kalman:
-    def __init__(self, Ap, Bp, Cp, Dp, Ep):
+    def __init__(self, Ap, Bp, Cp, Dp, Ep, Qn, Rn):
+        """Kalman filter wrapper for discrete time system
+        x_{t+1} = Ap @ x_t + Bp @ u + Ep @ w_t, y_t = Cp @ x_t + Dp @ u_t + v_t,
+        where w_t is noise with covariance matrix Qn and v_t is noise with covariance
+        matrix Rn.
+
+        :param Ap: _description_
+        :param Bp: _description_
+        :param Cp: _description_
+        :param Dp: _description_
+        :param Ep: _description_
+        :param Qn: _description_
+        :param Rn: _description_
+        """
         self.Ap = Ap
         self.Bp = Bp
         self.Cp = Cp
         self.Dp = Dp
         self.Ep = Ep
         self._xhat = np.zeros(shape=(Ap.shape[0], 1))
-
-        Qn = np.diag([0.00000001])
-        Rn = np.diag([0.0001])
 
         self._L, _, _ = ct.dlqe(Ap, Ep, Cp, Qn, Rn)
 
@@ -250,34 +237,6 @@ class Kalman:
 
     def xhat(self):
         return self._xhat
-
-
-class SimpleController:
-    def __init__(self, Ap, Bp, Cp, Dp, Q, R):
-        ctrb = ct.ctrb(Ap, Bp)
-        if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
-            raise ValueError("system not controllable")
-        
-        self._A = Ap
-        self._B = Bp
-        self._C = Cp
-        self._D = Dp
-
-        self._error = 0
-
-        self.K_state, S, E = ct.dlqr(Ap, Bp, Q, R)
-        
-    def control(self, x):
-        return -self.K_state @ x - 0.1 * self._error
-
-    def update(self, error):
-        self._error += error
-
-    def K(self):
-        return self.K_state
-    
-    def reset(self):
-        self._error = 0
 
 
 class LQRController:
@@ -332,6 +291,8 @@ class LQRPreviewController:
 
 class PreviewController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R, h):
+        raise NotImplementedError("must implement hinfsys in python-control")
+
         C = ct.ctrb(Ap, Bp)
         if C.shape[0] != np.linalg.matrix_rank(C):
             raise ValueError("system not controllable")

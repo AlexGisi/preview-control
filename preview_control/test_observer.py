@@ -32,7 +32,6 @@ def simulate(controller, times, get_ref):
     n_preview = controller.h if hasattr(controller, 'h') else None 
 
     x = np.zeros(shape=(Ap.shape[0], 1))
-    # x = np.ones(shape=(Ap.shape[0], 1))
     xs = [x]
     ys = [Cp @ x]
     us = []
@@ -53,11 +52,10 @@ def simulate(controller, times, get_ref):
     return xs, ys, us
 
 
-def simulate_observer(controller, times, get_ref, observer):
+def simulate_with_observer(controller, times, get_ref, observer):
     n_preview = controller.h if hasattr(controller, 'h') else None 
 
     x = np.zeros(shape=(Ap.shape[0], 1))
-    # x = np.ones(shape=(Ap.shape[0], 1))
     xs = [x]
     xos = [observer.xhat()]
     ys = [Cp @ x]
@@ -78,9 +76,6 @@ def simulate_observer(controller, times, get_ref, observer):
         e = rs[t] - y
         controller.update(e)
 
-        # if np.linalg.norm(x - xhat) > 0.01:
-        #     breakpoint()
-
         xs.append(x)
         xos.append(observer.xhat())
         ys.append(y)
@@ -93,19 +88,18 @@ def simulate_observer(controller, times, get_ref, observer):
     return xs, xos, ys, us
 
 # Define control objective function
-Q = np.array([[20.0]])
+Q = np.array([[10.0]])
 R = np.array([[0.1]])
 
-# Q = np.diag([1.0, 1.0, 1.0, 1.0])
-# R = np.array([[1.0]])
 
-# ctrl = controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=1)
-ctrl = controller.LQRController(Ap, Bp, Cp, Dp, Q, R)
-# ctrl = controller.SimpleController(Ap, Bp, Cp, Dp, Q, R)
-# obsrv = controller.Observer(Ap, Bp, Cp, Dp, ctrl.K())
-obsrv = controller.Kalman(Ap, Bp, Cp, Dp, np.ones(shape=(4, 1)))
+ctrl = controller.LQRPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10)
+# ctrl = controller.LQRController(Ap, Bp, Cp, Dp, Q, R)
 
-xs, xos, ys, us = simulate_observer(ctrl, ts, get_ref, obsrv)
+Qn = np.diag([0.00000001])
+Rn = np.diag([0.000001])
+obsrv = controller.Kalman(Ap, Bp, Cp, Dp, 0.00001 * np.ones(shape=(4, 1)), Qn, Rn)
+
+xs, xos, ys, us = simulate_with_observer(ctrl, ts, get_ref, obsrv)
 ctrl.reset()
 xs_nob, ys_nob, us_nob = simulate(ctrl, ts, get_ref)
 

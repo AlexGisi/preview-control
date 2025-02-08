@@ -5,6 +5,10 @@ Preview control augments state feedback techniques to use future points from the
 
 For a randomly generated 4-order system, the image shows the simulation with different preview lengths i corresponding to y_i, u_i. We see that adding preview improves the rise time and settling time.
 
+We also implement a Kalman filter which allows implementation of full-state feedback on an output system.
+
+![kalman results](img/observer.png)
+
 ## Use
 
 The control design provides a type-1 controller with good transient response for the system
