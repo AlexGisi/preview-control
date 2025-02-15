@@ -230,7 +230,8 @@ class SimpleController:
 class Kalman:
     def __init__(self, Ap, Bp, Cp, Dp, Ep, Qn, Rn):
         """Kalman filter wrapper for discrete time system
-        x_{t+1} = Ap @ x_t + Bp @ u + Ep @ w_t, y_t = Cp @ x_t + Dp @ u_t + v_t,
+                x_{t+1} = Ap @ x_t + Bp @ u + Ep * w_t,
+                y_t = Cp @ x_t + Dp @ u_t + v_t,
         where w_t is noise with covariance matrix Qn and v_t is noise with covariance
         matrix Rn.
 
@@ -254,10 +255,19 @@ class Kalman:
         assert self._L.shape == self._xhat.shape
 
     def update(self, yk, uk):
+        if not isinstance(yk, np.ndarray) and isinstance(yk, float):
+            yk = np.array([[yk]])
+        if not isinstance(uk, np.ndarray) and isinstance(uk, float):
+            uk = np.array([[uk]])
+
+
         self._xhat = self.Ap @ self._xhat + self.Bp @ uk + self._L @ (yk - self.Cp @ self._xhat - self.Dp @ uk)
 
     def xhat(self):
         return self._xhat
+    
+    def yhat(self):
+        return self.Cp @ self._xhat
 
 
 class LQIController:
