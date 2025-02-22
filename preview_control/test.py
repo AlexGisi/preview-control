@@ -4,32 +4,7 @@ Based off example 4 in "A Tutorial on Preview Control Systems", Takaba (2003).
 from . import controller
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-# Define the system
-Ap = np.array([
-    [0.9752, 0.0248, 0.1983, 0.0017],
-    [0.0248, 0.9752, 0.0017, 0.1983],
-    [-0.2459, 0.2459, 0.9752, 0.0248],
-    [0.2459, -0.2459, 0.0248, 0.9752],
-])
-Bp = np.array([
-    [-0.0199],
-    [-0.0001],
-    [-0.1983],
-    [-0.0017],
-])
-Cp = np.array([[0.0, 1.0, 0.0, 0.0]])
-Dp = np.array([[0.0]])
-
-# Use a step reference
-ts = range(80)
-rs = [np.zeros(shape=(Cp.shape[0], 1)) if t < 25 else np.ones(shape=(Cp.shape[0], 1)) for t in ts]
-get_ref = lambda i, h: np.array([rs[j] if j<len(rs) else rs[-1] for j in range(i, i+h+1)]).reshape(-1, 1)
-
-# Define control objective function
-Q = np.array([[20.0]])
-R = np.array([[1.0]])
+import argparse
 
 
 def simulate(controller, times, get_ref):
@@ -55,30 +30,64 @@ def simulate(controller, times, get_ref):
 
     return xs, ys, us
 
-trials = {
-    0: simulate(controller.LQIController(Ap, Bp, Cp, Dp, Q, R), ts, get_ref),
-    5: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5), ts, get_ref),
-    10: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10), ts, get_ref),
-    15: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=15), ts, get_ref),
-    20: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=20), ts, get_ref),
-}
 
-rs = [float(r.item()) for r in rs]
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--plot', action='store_true')
+    args = parser.parse_args()
+    
+    print('setting up test...')
+    # Define the system
+    Ap = np.array([
+        [0.9752, 0.0248, 0.1983, 0.0017],
+        [0.0248, 0.9752, 0.0017, 0.1983],
+        [-0.2459, 0.2459, 0.9752, 0.0248],
+        [0.2459, -0.2459, 0.0248, 0.9752],
+    ])
+    Bp = np.array([
+        [-0.0199],
+        [-0.0001],
+        [-0.1983],
+        [-0.0017],
+    ])
+    Cp = np.array([[0.0, 1.0, 0.0, 0.0]])
+    Dp = np.array([[0.0]])
 
+    # Use a step reference
+    ts = range(80)
+    rs = [np.zeros(shape=(Cp.shape[0], 1)) if t < 25 else np.ones(shape=(Cp.shape[0], 1)) for t in ts]
+    get_ref = lambda i, h: np.array([rs[j] if j<len(rs) else rs[-1] for j in range(i, i+h+1)]).reshape(-1, 1)
 
-fig, axs = plt.subplots(2, 1)
-for h, res in trials.items():
-    ys = res[1]
-    us = res[2]
+    # Define control objective function
+    Q = np.array([[20.0]])
+    R = np.array([[1.0]])
 
-    axs[0].plot(ts, ys, label=f'y_{h}')
-    axs[0].legend(loc='center left', bbox_to_anchor=(-0.3, 0.5))  # Move legend to the far left
-    axs[0].set_title('output')
+    print('executing simulations...')
+    trials = {
+        0: simulate(controller.LQIController(Ap, Bp, Cp, Dp, Q, R), ts, get_ref),
+        5: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=5), ts, get_ref),
+        10: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=10), ts, get_ref),
+        15: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=15), ts, get_ref),
+        20: simulate(controller.LQIPreviewController(Ap, Bp, Cp, Dp, Q, R, h=20), ts, get_ref),
+    }
+    print('succesfully simulated LQIPreviewController with varying preview lengths')
 
-    axs[1].plot(ts[:-1], us, label=f'u_{h}')
-    axs[1].legend(loc='center left', bbox_to_anchor=(-0.3, 0.5))  # Move legend to the far left
-    axs[1].set_title('control input')
-axs[0].plot(ts, rs, 'k--', label='r')
+    if args.plot:
+        rs = [float(r.item()) for r in rs]
 
-plt.tight_layout()
-plt.show()
+        fig, axs = plt.subplots(2, 1)
+        for h, res in trials.items():
+            ys = res[1]
+            us = res[2]
+
+            axs[0].plot(ts, ys, label=f'y_{h}')
+            axs[0].legend(loc='center left', bbox_to_anchor=(-0.3, 0.5))  # Move legend to the far left
+            axs[0].set_title('output')
+
+            axs[1].plot(ts[:-1], us, label=f'u_{h}')
+            axs[1].legend(loc='center left', bbox_to_anchor=(-0.3, 0.5))  # Move legend to the far left
+            axs[1].set_title('control input')
+        axs[0].plot(ts, rs, 'k--', label='r')
+
+        plt.tight_layout()
+        plt.show()

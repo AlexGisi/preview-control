@@ -19,6 +19,8 @@ in the sense of minimizing
 
 ![cost](img/cost.png)
 
+That is, Q is a matrix which weights the output-reference errors and R is a matrix which weights the input difference.
+
 The library provides the following workflow:
 
 ```
