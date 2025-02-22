@@ -11,6 +11,15 @@ We also implement a Kalman filter which allows implementation of full-state feed
 
 ## Use
 
+To get the plots above, install the library and run
+
+```
+python -m preview_control.test --plot
+python -m preview_control.test_observer --plot
+```
+
+These modules provide an example of how to use the library. 
+
 The control design provides a type-1 controller with good transient response for the system
 
 ![ss](img/ss.png)
