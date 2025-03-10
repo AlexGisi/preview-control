@@ -123,6 +123,9 @@ class LQIPreviewController:
     def reset(self):
         self.e_accum = np.zeros_like(self.e_accum)
 
+    def preview_length(self):
+        return self.h
+
 
 class HInfPreviewController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R, h):
