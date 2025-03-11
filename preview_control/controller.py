@@ -2,7 +2,6 @@
 References
 [1] "hinfsyn: Compute H-infinity optimal controller", Mathworks. 
 """
-import scipy
 import numpy as np
 import control as ct
 import scipy.linalg
@@ -76,6 +75,13 @@ class SimpleController:
 
 class LQIController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R):
+        assert isinstance(Ap, np.ndarray)
+        assert isinstance(Bp, np.ndarray)
+        assert isinstance(Cp, np.ndarray)
+        assert isinstance(Dp, np.ndarray)
+        assert isinstance(Q, np.ndarray)
+        assert isinstance(R, np.ndarray)
+
         ctrb = ct.ctrb(Ap, Bp)
         if ctrb.shape[0] != np.linalg.matrix_rank(ctrb):
             raise ValueError("system not controllable")
@@ -97,9 +103,20 @@ class LQIController:
     def reset(self):
         self.e_accum = np.zeros_like(self.e_accum)
 
+    def preview_length(self):
+        return 0
+
 
 class LQIPreviewController:
     def __init__(self, Ap, Bp, Cp, Dp, Q, R, h):
+        assert isinstance(Ap, np.ndarray)
+        assert isinstance(Bp, np.ndarray)
+        assert isinstance(Cp, np.ndarray)
+        assert isinstance(Dp, np.ndarray)
+        assert isinstance(Q, np.ndarray)
+        assert isinstance(R, np.ndarray)
+        assert isinstance(h, int)
+        
         self.h = h
         C = ct.ctrb(Ap, Bp)
         if C.shape[0] != np.linalg.matrix_rank(C):
